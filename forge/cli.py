@@ -16,16 +16,16 @@ def help():
 Usage: forge <command>
 
 Available commands:
-  customise   Start the customisation interface
+  start       Start the customisation interface
   build       Syncs forge.config.json with runtime configs
-  list        Lists all current configs. If none, prompts to run 'forge customise'
+  list        Lists all current configs. If none, prompts to run 'forge start'
   -h, --help  Show this help message
 """
     )
 
 
-def customise(config_manager):
-    utils.prln("🔧 Customise your Vite project")
+def start(config_manager):
+    utils.prln("🔧 Start customisation of your Vite project")
     configs: Dict = config_manager.get()
     config_manager.set(configs)
     utils.prln("✅ Custom configurations set!\n")
@@ -44,11 +44,9 @@ def list_configs():
             pass
 
     if config_empty:
-        utils.prln(
-            "You have not configured Forge yet. Run 'forge customise' to do so.\n"
-        )
+        utils.prln("You have not configured Forge yet. Run 'forge start' to do so.\n")
     else:
-        utils.prln(configs)
+        utils.prln(json.dumps(configs, indent=2))
 
 
 # Build what the user has put in package.json on project start
@@ -71,7 +69,7 @@ def build():
             configs["colours"],
         )
         config_manager.write_env(configs["env"])
-        utils.prln("✔ Forge configs built")
+        utils.prln("✔ Forge configs built. Run 'npm run dev' to view your new configuration.\n")
 
 
 def main():
@@ -81,8 +79,8 @@ def main():
         return
 
     command = sys.argv[1]
-    if command == "customise":
-        customise(config_manager)
+    if command == "start":
+        start(config_manager)
     elif command == "list":
         list_configs()
     elif command == "build":
@@ -108,7 +106,7 @@ class ConfigFactory:
         return args
 
     def set(self, config):
-        self.write_font(config["use_google_fonts"], config["font"])
+        config["font"] = self.write_font(config["use_google_fonts"], config["font"])
         self.write_colours(config["colours"])
         self.write_env(config["env"])
 
@@ -199,29 +197,35 @@ class ConfigFactory:
 
     # <================ Set Methods in respective files ================>
 
-    def write_font(self, use_google_fonts: bool, font: str) -> None:
+    def write_font(self, use_google_fonts: bool, font: str) -> str:
         if use_google_fonts:
+            tailwind_config_font = " ".join(
+                [word.capitalize() for word in font.split()]
+            )
             utils.write_config(
                 file_path=path.TW_CONFIG_PATH,
                 example="<font>",
-                new_setting=" ".join([word.capitalize() for word in font.split()]),
+                new_setting=tailwind_config_font,
             )
+            index_css_font = "+".join([word.capitalize() for word in font.split()])
             utils.write_config(
                 file_path=path.INDEX_CSS_PATH,
                 example="<font>",
-                new_setting="+".join([word.capitalize() for word in font.split()]),
+                new_setting=index_css_font,
             )
-        else:
-            utils.write_config(
-                file_path=path.TW_CONFIG_PATH,
-                example="<font>",
-                new_setting=font,
-            )
-            utils.write_config(
-                file_path=path.INDEX_CSS_PATH,
-                example="<font>",
-                new_setting=font.replace(" ", "-").lower(),
-            )
+            return tailwind_config_font
+
+        utils.write_config(
+            file_path=path.TW_CONFIG_PATH,
+            example="<font>",
+            new_setting=font,
+        )
+        utils.write_config(
+            file_path=path.INDEX_CSS_PATH,
+            example="<font>",
+            new_setting=font.replace(" ", "-").lower(),
+        )
+        return font
 
     def write_colours(self, colours: types.Colours) -> None:
         js_colours: str = utils.to_tailwind_js(colours)
@@ -267,9 +271,9 @@ class ConfigFactory:
     def update_tailwind_config_font(self, file_path: Path, font_name: str) -> None:
         with open(file_path, "r+") as f:
             content = f.read()
-            pattern = r"(?<=//forge-insert:fonts\n\s*sans: \[)[^\]]+(?=\])"
+            pattern = r"(//forge-insert:fonts\s*\n\s*sans:\s*\[)[^\]]+(?=\])"
             new_value = f'"{font_name}", ...defaultTheme.fontFamily.sans'
-            updated = re.sub(pattern, new_value, content)
+            updated = re.sub(pattern, r"\1" + new_value, content)
             f.seek(0)
             f.write(updated)
             f.truncate()
@@ -283,8 +287,8 @@ class ConfigFactory:
 
         with open(file_path, "r+") as f:
             content = f.read()
-            pattern = r"(?<=//forge-insert:colours\n\s*colors: )<colors>"
-            updated = re.sub(pattern, js_colour_block, content)
+            pattern = r"(//forge-insert:colours\s*\n\s*colors:\s*)<colors>"
+            updated = re.sub(pattern, r"\1" + js_colour_block, content)
             f.seek(0)
             f.write(updated)
             f.truncate()

@@ -50,7 +50,6 @@ def to_tailwind_js(py_obj, indent=2):
         lines.append(f"{pad}}}")
         return "\n".join(lines)
 
-    print(f"Serialised object: {py_obj}")
     return serialize(py_obj)
 
 
@@ -67,11 +66,11 @@ def encase(string: str) -> str:
 
 def read_configs() -> str:
     if not path.FORGE_CONFIG_PATH.exists():
-        prln("You have not configured Forge yet. Run 'forge customise' to do so.\n")
+        prln("You have not configured Forge yet. Run 'forge start' to do so.\n")
         return ""
     else:
         with open(path.FORGE_CONFIG_PATH, "r") as f:
-            return json.loads(f.read())
+            return f.read()
 
 
 def prompt_api_keys(api_integrations) -> types.ApiIntegrations:
