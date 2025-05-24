@@ -15,7 +15,7 @@ module.exports = {
         //forge-insert:fonts
         sans: ["<font>", ...defaultTheme.fontFamily.sans],
       },
-      //forge-insert:colours
+      //forge-insert:colors
       colors: "<colors>",
     },
   },

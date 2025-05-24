@@ -69,7 +69,9 @@ def build():
             configs["colours"],
         )
         config_manager.write_env(configs["env"])
-        utils.prln("✔ Forge configs built. Run 'npm run dev' to view your new configuration.\n")
+        utils.prln(
+            "✔ Forge configs built. Run 'npm run dev' to view your new configuration.\n"
+        )
 
 
 def main():
@@ -287,8 +289,8 @@ class ConfigFactory:
 
         with open(file_path, "r+") as f:
             content = f.read()
-            pattern = r"(//forge-insert:colours\s*\n\s*colors:\s*)<colors>"
-            updated = re.sub(pattern, r"\1" + js_colour_block, content)
+            pattern = r"(//forge-insert:colors\s*\n\s*)colors:\s*\{(?:[^{}]|\{[^{}]*\})*\},?"
+            updated = re.sub(pattern, r"\1colors: " + js_colour_block + ",", content)
             f.seek(0)
             f.write(updated)
             f.truncate()
