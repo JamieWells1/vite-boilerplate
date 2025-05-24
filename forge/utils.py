@@ -41,13 +41,12 @@ def to_tailwind_js(py_obj, indent=2):
     def serialize(d, level=0):
         pad = " " * (level * indent)
         lines = ["{"]
-        for i, (k, v) in enumerate(d.items()):
-            key = k  # unquoted
+        for k, v in d.items():
             if isinstance(v, dict):
                 val = serialize(v, level + 1)
             else:
                 val = f'"{v}"'
-            lines.append(f'{pad}{" " * indent}{key}: {val},')
+            lines.append(f'{pad}{" " * indent}{k}: {val},')
         lines.append(f"{pad}}}")
         return "\n".join(lines)
 
@@ -62,25 +61,25 @@ def cli_string_to_bool(string: str) -> bool:
 
 # add double quotes around a value that's being injected into .env
 def encase(string: str) -> str:
-    return '"' + string + '"'
+    return f'"{string}"'
 
 
 def read_configs() -> str:
     if not path.FORGE_CONFIG_PATH.exists():
-        prln("You have not configured Forge yet. Run 'forge customise' to do so.\n")
+        prln("You have not configured Forge yet. Run 'forge start' to do so.\n")
         return ""
     else:
         with open(path.FORGE_CONFIG_PATH, "r") as f:
-            return json.loads(f.read())
+            return f.read()
 
 
 def prompt_api_keys(api_integrations) -> types.ApiIntegrations:
     while True:
         env_var_name = input("\nEnvironment variable name: ")
-        env_var_value = encase(input(f"Value for '{env_var_name}': "))
+        env_var_value = input(f"Value for '{env_var_name}': ")
 
         api_integrations[env_var_name] = env_var_value
-        prln(f"✅ API key '{env_var_name}' added")
+        prln(f"✔ API key '{env_var_name}' added")
 
         add_another = input("Add another API key? (y/N): ")
         if not cli_string_to_bool(add_another):

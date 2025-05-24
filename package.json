@@ -6,6 +6,7 @@
   "scripts": {
     "predev": "python3 forge/build.py",
     "dev": "vite",
+    "prebuild": "python3 forge/build.py",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
