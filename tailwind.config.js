@@ -8,12 +8,14 @@ module.exports = {
     "./src/layouts/**/*.{js,ts,jsx,tsx}",
     "./src/pages/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: "class", // Enable dark mode (class-based or media-based)
+  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Roboto", ...defaultTheme.fontFamily.sans],
+        //forge-insert:fonts
+        sans: ["<font>", ...defaultTheme.fontFamily.sans],
       },
+      //forge-insert:colours
       colors: "<colors>",
     },
   },

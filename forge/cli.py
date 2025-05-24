@@ -1,6 +1,7 @@
 import sys
 import re
 import json
+from pathlib import Path
 
 from typing import Dict, cast
 from forge import utils, path, types
@@ -9,23 +10,24 @@ from forge import utils, path, types
 HEX_REGEX = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
 
 
-def print_help():
+def help():
     print(
         """
 Usage: forge <command>
 
 Available commands:
   customise   Start the customisation interface
+  build       Syncs forge.config.json with runtime configs
   list        Lists all current configs. If none, prompts to run 'forge customise'
   -h, --help  Show this help message
 """
     )
 
 
-def customise(config):
+def customise(config_manager):
     utils.prln("🔧 Customise your Vite project")
-    args: Dict = config.get()
-    config.set(args)
+    configs: Dict = config_manager.get()
+    config_manager.set(configs)
 
 
 def list_configs():
@@ -41,51 +43,42 @@ def list_configs():
             pass
 
     if config_empty:
-        utils.prln("You have not configured Forge yet. Run 'forge customise' to do so.")
+        utils.prln(
+            "You have not configured Forge yet. Run 'forge customise' to do so.\n"
+        )
     else:
         utils.prln(configs)
 
 
 # Build what the user has put in package.json on project start
-def build(config):
+def build():
+    config_manager = ConfigFactory()
     if path.ENV_PATH.exists():
         try:
-            configs = utils.read_configs()
+            configs: types.ForgeConfigs = json.loads(utils.read_configs())
         except json.JSONDecodeError:
             return
 
-        config.write_font(
-            configs["fonts"]["use_google_fonts"], configs["fonts"]["font"]
-        )
-
 
 def main():
-    config = ConfigFactory()
+    config_manager = ConfigFactory()
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
-        print_help()
+        help()
         return
 
     command = sys.argv[1]
     if command == "customise":
-        customise(config)
+        customise(config_manager)
     elif command == "list":
         list_configs()
     elif command == "build":
-        build(config)
+        build()
     else:
         print(f"Unknown command: {command}\n")
-        print_help()
-
-
-if __name__ == "__main__":
-    main()
+        help()
 
 
 class ConfigFactory:
-    def __init__(self) -> None:
-        self.font: str = ""
-        self.primary: str = ""
-        self.secondary: str = ""
 
     def get(self):
         args = {}
@@ -101,18 +94,18 @@ class ConfigFactory:
 
         return args
 
-    def set(self, args):
-        self.write_font(args["use_google_fonts"], args["font"])
-        self.write_colours(args["colours"])
-        self.write_env(args["env"])
+    def set(self, config):
+        self.write_font(config["use_google_fonts"], config["font"])
+        self.write_colours(config["colours"])
+        self.write_env(config["env"])
 
         with open(path.FORGE_CONFIG_PATH, "r+") as f:
             fonts: types.Font = {
-                "font": args["font"],
-                "use_google_fonts": args["use_google_fonts"],
+                "font": config["font"],
+                "use_google_fonts": config["use_google_fonts"],
             }
-            colours: types.Colours = args["colours"]
-            env: types.Env = args["env"]
+            colours: types.Colours = config["colours"]
+            env: types.Env = config["env"]
 
             new_configs = json.dumps({"fonts": fonts, "colours": colours, "env": env})
             f.seek(0)
@@ -202,18 +195,25 @@ class ConfigFactory:
             utils.write_config(
                 file_path=path.TW_CONFIG_PATH,
                 example="<font>",
+                new_setting=font.capitalize(),
+            )
+            utils.write_config(
+                file_path=path.INDEX_CSS_PATH,
+                example="<font>",
                 new_setting=font.replace(" ", "+").capitalize(),
             )
         else:
             utils.write_config(
                 file_path=path.TW_CONFIG_PATH,
                 example="<font>",
-                new_setting=font.replace(" ", "-").lower(),
+                new_setting=font,
+            )
+            utils.write_config(
+                file_path=path.INDEX_CSS_PATH,
+                example="<font>",
+                new_setting=font.lower(),
             )
 
-        utils.write_config(
-            file_path=path.INDEX_CSS_PATH, example="<font>", new_setting=font
-        )
 
     def write_colours(self, colours: types.Colours) -> None:
         utils.write_config(
@@ -239,3 +239,45 @@ class ConfigFactory:
                 lines.append(f"{key}={utils.encase(value)}")
 
             f.write("\n".join(lines))
+
+    # <================ Update Methods ================>
+
+    def update_index_css_font(self, file_path: Path, font_name: str) -> None:
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        pattern = r"(?<=/\* //forge-insert:google-font \*/\n)(@import url\([^)]+\);)"
+        new_import = f'@import url("https://fonts.googleapis.com/css2?family={font_name.replace(" ", "+")}:wght@400;600;700&display=swap");'
+        updated = re.sub(pattern, new_import, content)
+
+        with open(file_path, "w") as f:
+            f.write(updated)
+
+
+    def update_tailwind_config_font(self, file_path: Path, font_name: str) -> None:
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        pattern = r"(?<=//forge-insert:fonts\n\s*sans: \[)[^\]]+(?=\])"
+        new_value = f'"{font_name}", ...defaultTheme.fontFamily.sans'
+        updated = re.sub(pattern, new_value, content)
+
+        with open(file_path, "w") as f:
+            f.write(updated)
+
+
+    def update_tailwind_config_colors(self, file_path: Path, js_color_block: str) -> None:
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        pattern = r"(?<=//forge-insert:colours\n\s*colors: )<colors>"
+        updated = re.sub(pattern, js_color_block, content)
+
+        with open(file_path, "w") as f:
+            f.write(updated)
+
+
+    # Example usage
+    # update_index_css_font(Path("src/index.css"), "Roboto")
+    # update_tailwind_config_font(Path("tailwind.config.js"), "Roboto")
+    # update_tailwind_config_colors(Path("tailwind.config.js"), "{ primary: { DEFAULT: '#123', dark: '#000', light: '#456' } }")
