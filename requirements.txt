@@ -1,0 +1,1 @@
+-e git+https://github.com/JamieWells1/vite-boilerplate.git@f69ef18587524a701e15f9766445444b1e8fb4c1#egg=forge
