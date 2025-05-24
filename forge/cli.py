@@ -1,9 +1,8 @@
 import sys
 import re
 
-from typing import Dict, Any
-from forge import utils
-from forge import path
+from typing import Dict, cast
+from forge import utils, path, types
 
 
 HEX_REGEX = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
@@ -42,17 +41,20 @@ class ConfigFactory:
         args = {}
 
         use_google_fonts, font = self.configure_font()
-        colours: Dict = self.configure_colours()
+        colours: types.Colours = self.configure_colours()
+        env: types.Env = self.configure_env()
 
         args["font"] = font
         args["use_google_fonts"] = use_google_fonts
         args["colours"] = colours
+        args["env"] = env
 
         return args
 
     def set(self, args):
         self.write_font(args["use_google_fonts"], args["font"])
         self.write_colours(args["colours"])
+        self.write_env(args["env"])
 
     # <================ Get Methods ================>
 
@@ -72,8 +74,8 @@ class ConfigFactory:
 
         return use_google_fonts, font
 
-    def configure_colours(self) -> Dict:
-        colours = {}
+    def configure_colours(self) -> types.Colours:
+        colours: types.Colours = {}
         primary = "#" + input("\nPrimary colour (hex): #")
         secondary = "#" + input("\nSecondary colour (hex): #")
 
@@ -81,17 +83,23 @@ class ConfigFactory:
             utils.prln("Please enter valid hexademical colours.")
             self.configure_colours()
 
-        colours["primary"] = utils.generate_shades(primary)
-        colours["secondary"] = utils.generate_shades(secondary)
+        colours["primary"] = cast(
+            types.ColourVariations, utils.generate_shades(primary)
+        )
+        colours["secondary"] = cast(
+            types.ColourVariations, utils.generate_shades(secondary)
+        )
 
         return colours
 
-    def configure_env(self):
-        env: dict[str, Any] = {}
-        api_integrations: Dict[str, str] = {}  # {"API_KEY": "abc123"}
+    def configure_env(self) -> types.Env:
+        env: types.Env = {}
+        api_integrations: types.ApiIntegrations = {}
 
         # Get/set domain
-        domain: str = "https://" + input("\nDomain: https://").replace("www.", "")
+        domain: str = utils.encase(
+            "https://" + input("\nDomain: https://").replace("www.", "")
+        )
         if not domain:
             domain = "https://example.com"
 
@@ -99,14 +107,14 @@ class ConfigFactory:
             f"\nUse https://api.{domain[8:]} as API base URL? (Y/n): "
         )
         if use_subdomain_api_base:
-            api_base_url = f"https://api.{domain[8:]}"
+            api_base_url = utils.encase(f"https://api.{domain[8:]}")
         else:
-            api_base_url = f"{domain}/api"
+            api_base_url = utils.encase(f"{domain}/api")
 
-        def prompt_api_keys():
+        def prompt_api_keys() -> None:
             while True:
                 env_var_name = input("\nEnvironment variable name: ")
-                env_var_value = '"' + input(f"Value for '{env_var_name}': ") + '"'
+                env_var_value = utils.encase(input(f"Value for '{env_var_name}': "))
 
                 api_integrations[env_var_name] = env_var_value
                 utils.prln(f"✅ API key '{env_var_name}' added")
@@ -127,7 +135,7 @@ class ConfigFactory:
 
     # <================ Set Methods ================>
 
-    def write_font(self, use_google_fonts: bool, font: str):
+    def write_font(self, use_google_fonts: bool, font: str) -> None:
         if use_google_fonts:
             utils.write_config(
                 file_path=path.TW_CONFIG_PATH,
@@ -145,9 +153,17 @@ class ConfigFactory:
             file_path=path.INDEX_CSS_PATH, example="<font>", new_setting=font
         )
 
-    def write_colours(self, colours: Dict):
+    def write_colours(self, colours: types.Colours) -> None:
         utils.write_config(
             file_path=path.TW_CONFIG_PATH,
             example="<colors>",
             new_setting=utils.to_tailwind_js(colours),
         )
+
+    def write_env(self, env: types.Env) -> None:
+        if not path.ENV_PATH.exists():
+            path.ENV_PATH.touch()
+
+        with open(path.ENV_PATH, "w") as f:
+            f.seek(0)
+            f.write('ENV="DEV"')

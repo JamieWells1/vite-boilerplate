@@ -1,6 +1,5 @@
 from pathlib import Path
 import colorsys
-import json
 
 
 def write_config(file_path: Path, example: str, new_setting: str):
@@ -56,3 +55,8 @@ def cli_string_to_bool(string: str) -> bool:
     if string == "y" or string == "Y":
         return True
     return False
+
+
+# add double quotes around a value that's being injected into .env
+def encase(string: str) -> str:
+    return '"' + string + '"'
