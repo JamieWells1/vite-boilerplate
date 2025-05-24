@@ -59,6 +59,14 @@ def build():
         except json.JSONDecodeError:
             return
 
+        config_manager.update_index_css_font(path.INDEX_CSS_PATH, configs["fonts"]["font"])
+        config_manager.update_tailwind_config_font(path.TW_CONFIG_PATH, configs["fonts"]["font"])
+        config_manager.update_tailwind_config_colors(
+            path.TW_CONFIG_PATH,
+            configs["colours"],
+        )
+        config_manager.write_env(configs["env"])
+
 
 def main():
     config_manager = ConfigFactory()
@@ -134,7 +142,9 @@ class ConfigFactory:
         primary = "#" + input("\nPrimary colour (hex): #")
         secondary = "#" + input("\nSecondary colour (hex): #")
 
-        if not re.fullmatch(HEX_REGEX, primary) or not re.fullmatch(HEX_REGEX, secondary):
+        if not re.fullmatch(HEX_REGEX, primary) or not re.fullmatch(
+            HEX_REGEX, secondary
+        ):
             utils.prln("Please enter valid hexademical colours.")
             self.configure_colours()
 
@@ -176,7 +186,7 @@ class ConfigFactory:
 
         return env
 
-    # <================ Set Methods ================>
+    # <================ Set Methods in respective files ================>
 
     def write_font(self, use_google_fonts: bool, font: str) -> None:
         if use_google_fonts:
@@ -227,43 +237,38 @@ class ConfigFactory:
 
             f.write("\n".join(lines))
 
-    # <================ Update Methods ================>
+    # <================ Update Methods from forge.config.json to respective files ================>
 
     def update_index_css_font(self, file_path: Path, font_name: str) -> None:
-        with open(file_path, "r") as f:
+        with open(file_path, "r+") as f:
             content = f.read()
-
-        pattern = r"(?<=/\* //forge-insert:google-font \*/\n)(@import url\([^)]+\);)"
-        new_import = f'@import url("https://fonts.googleapis.com/css2?family={font_name.replace(" ", "+")}:wght@400;600;700&display=swap");'
-        updated = re.sub(pattern, new_import, content)
-
-        with open(file_path, "w") as f:
+            pattern = (
+                r"(?<=/\* //forge-insert:google-font \*/\n)(@import url\([^)]+\);)"
+            )
+            new_import = f'@import url("https://fonts.googleapis.com/css2?family={font_name.replace(" ", "+")}:wght@400;600;700&display=swap");'
+            updated = re.sub(pattern, new_import, content)
+            f.seek(0)
             f.write(updated)
+            f.truncate()
 
     def update_tailwind_config_font(self, file_path: Path, font_name: str) -> None:
-        with open(file_path, "r") as f:
+        with open(file_path, "r+") as f:
             content = f.read()
-
-        pattern = r"(?<=//forge-insert:fonts\n\s*sans: \[)[^\]]+(?=\])"
-        new_value = f'"{font_name}", ...defaultTheme.fontFamily.sans'
-        updated = re.sub(pattern, new_value, content)
-
-        with open(file_path, "w") as f:
+            pattern = r"(?<=//forge-insert:fonts\n\s*sans: \[)[^\]]+(?=\])"
+            new_value = f'"{font_name}", ...defaultTheme.fontFamily.sans'
+            updated = re.sub(pattern, new_value, content)
+            f.seek(0)
             f.write(updated)
+            f.truncate()
 
     def update_tailwind_config_colors(
-        self, file_path: Path, js_color_block: str
+        self, file_path: Path, colours: types.Colours
     ) -> None:
-        with open(file_path, "r") as f:
+        js_colour_block: str = utils.to_tailwind_js(colours)
+        with open(file_path, "r+") as f:
             content = f.read()
-
-        pattern = r"(?<=//forge-insert:colours\n\s*colors: )<colors>"
-        updated = re.sub(pattern, js_color_block, content)
-
-        with open(file_path, "w") as f:
+            pattern = r"(?<=//forge-insert:colours\n\s*colors: )<colors>"
+            updated = re.sub(pattern, js_colour_block, content)
+            f.seek(0)
             f.write(updated)
-
-    # Example usage
-    # update_index_css_font(Path("src/index.css"), "Roboto")
-    # update_tailwind_config_font(Path("tailwind.config.js"), "Roboto")
-    # update_tailwind_config_colors(Path("tailwind.config.js"), "{ primary: { DEFAULT: '#123', dark: '#000', light: '#456' } }")
+            f.truncate()
