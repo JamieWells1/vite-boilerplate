@@ -1,6 +1,5 @@
 from pathlib import Path
 import colorsys
-import json
 
 from forge import path, types
 
