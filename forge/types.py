@@ -7,7 +7,12 @@ ApiIntegrations = dict[str, str]
 class Env(TypedDict, total=False):
     domain: str
     api_base_url: str
-    api_integrations: 'ApiIntegrations'
+    api_integrations: "ApiIntegrations"
+
+
+class Font(TypedDict):
+    font: str
+    use_google_fonts: bool
 
 
 class ColourVariations(TypedDict):
@@ -24,5 +29,11 @@ class Colours(TypedDict, total=False):
 class ConfigArgs(TypedDict):
     font: str
     use_google_fonts: bool
+    colours: Colours
+    env: Env
+
+
+class ForgeConfigs(TypedDict):
+    fonts: Font
     colours: Colours
     env: Env

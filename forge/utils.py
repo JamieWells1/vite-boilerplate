@@ -1,5 +1,8 @@
 from pathlib import Path
 import colorsys
+import json
+
+from forge import path
 
 
 def write_config(file_path: Path, example: str, new_setting: str):
@@ -60,3 +63,8 @@ def cli_string_to_bool(string: str) -> bool:
 # add double quotes around a value that's being injected into .env
 def encase(string: str) -> str:
     return '"' + string + '"'
+
+
+def read_configs() -> str:
+    with open(path.FORGE_CONFIG_PATH, "r") as f:
+        return json.loads(f.read())

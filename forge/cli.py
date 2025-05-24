@@ -1,5 +1,6 @@
 import sys
 import re
+import json
 
 from typing import Dict, cast
 from forge import utils, path, types
@@ -8,23 +9,72 @@ from forge import utils, path, types
 HEX_REGEX = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
 
 
-def configure():
-    utils.prln("🔧 Configure your Vite project")
-    config = ConfigFactory()
+def print_help():
+    print(
+        """
+Usage: forge <command>
+
+Available commands:
+  customise   Start the customisation interface
+  list        Lists all current configs. If none, prompts to run 'forge customise'
+  -h, --help  Show this help message
+"""
+    )
+
+
+def customise(config):
+    utils.prln("🔧 Customise your Vite project")
     args: Dict = config.get()
     config.set(args)
 
 
+def list_configs():
+    config_empty: bool = True
+    configs = "{}"
+
+    if path.ENV_PATH.exists():
+        try:
+            configs = utils.read_configs()
+            if configs != "{}":
+                config_empty = False
+        except json.JSONDecodeError:
+            pass
+
+    if config_empty:
+        utils.prln("You have not configured Forge yet. Run 'forge customise' to do so.")
+    else:
+        utils.prln(configs)
+
+
+# Build what the user has put in package.json on project start
+def build(config):
+    if path.ENV_PATH.exists():
+        try:
+            configs = utils.read_configs()
+        except json.JSONDecodeError:
+            return
+
+        config.write_font(
+            configs["fonts"]["use_google_fonts"], configs["fonts"]["font"]
+        )
+
+
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: forge <command>")
+    config = ConfigFactory()
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print_help()
         return
 
     command = sys.argv[1]
-    if command == "configure":
-        configure()
+    if command == "customise":
+        customise(config)
+    elif command == "list":
+        list_configs()
+    elif command == "build":
+        build(config)
     else:
-        print(f"Unknown command: {command}")
+        print(f"Unknown command: {command}\n")
+        print_help()
 
 
 if __name__ == "__main__":
@@ -55,6 +105,18 @@ class ConfigFactory:
         self.write_font(args["use_google_fonts"], args["font"])
         self.write_colours(args["colours"])
         self.write_env(args["env"])
+
+        with open(path.FORGE_CONFIG_PATH, "r+") as f:
+            fonts: types.Font = {
+                "font": args["font"],
+                "use_google_fonts": args["use_google_fonts"],
+            }
+            colours: types.Colours = args["colours"]
+            env: types.Env = args["env"]
+
+            new_configs = json.dumps({"fonts": fonts, "colours": colours, "env": env})
+            f.seek(0)
+            f.write(new_configs)
 
     # <================ Get Methods ================>
 
@@ -166,4 +228,14 @@ class ConfigFactory:
 
         with open(path.ENV_PATH, "w") as f:
             f.seek(0)
-            f.write('ENV="DEV"')
+            lines = ['ENV="DEV"']
+            lines.append(
+                f'DOMAIN={env.get("domain", utils.encase("https://example.com"))}'
+            )
+            lines.append(
+                f'API_BASE_URL={env.get("api_base_url", utils.encase("https://api.example.com"))}'
+            )
+            for key, value in env.get("api_integrations", {}).items():
+                lines.append(f"{key}={utils.encase(value)}")
+
+            f.write("\n".join(lines))
