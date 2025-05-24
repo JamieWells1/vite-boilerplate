@@ -18,6 +18,7 @@ jobs:
         with:
           node-version: 18
       - run: npm install
+      - run: pip install -r requirements.txt
       - run: npm run lint
       - run: npm run test
       - run: npm run build
