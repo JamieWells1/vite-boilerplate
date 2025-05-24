@@ -1,0 +1,12 @@
+{
+  "fonts": { "font": "roboto", "use_google_fonts": true },
+  "colours": {
+    "primary": { "DEFAULT": "#123456", "light": "#1f5a95", "dark": "#040d16" },
+    "secondary": { "DEFAULT": "#abcdef", "light": "#ebf3fb", "dark": "#6aa6e2" }
+  },
+  "env": {
+    "domain": "\"https://test-domain.com\"",
+    "api_base_url": "\"\"https://test-domain.com\"/api\"",
+    "api_integrations": {}
+  }
+}
