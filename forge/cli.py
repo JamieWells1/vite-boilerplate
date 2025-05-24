@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from typing import Dict, cast
-from forge import utils, path, types
+from forge import utils, path, types, constants
 
 
 HEX_REGEX = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
@@ -134,7 +134,7 @@ class ConfigFactory:
         primary = "#" + input("\nPrimary colour (hex): #")
         secondary = "#" + input("\nSecondary colour (hex): #")
 
-        if not re.fullmatch(HEX_REGEX, primary) or re.fullmatch(HEX_REGEX, secondary):
+        if not re.fullmatch(HEX_REGEX, primary) or not re.fullmatch(HEX_REGEX, secondary):
             utils.prln("Please enter valid hexademical colours.")
             self.configure_colours()
 
@@ -156,7 +156,7 @@ class ConfigFactory:
             "https://" + input("\nDomain: https://").replace("www.", "")
         )
         if not domain:
-            domain = "https://example.com"
+            domain = constants.DEFAULT_DOMAIN
 
         use_subdomain_api_base = input(
             f"\nUse https://api.{domain[8:]} as API base URL? (Y/n): "
@@ -166,21 +166,9 @@ class ConfigFactory:
         else:
             api_base_url = utils.encase(f"{domain}/api")
 
-        def prompt_api_keys() -> None:
-            while True:
-                env_var_name = input("\nEnvironment variable name: ")
-                env_var_value = utils.encase(input(f"Value for '{env_var_name}': "))
-
-                api_integrations[env_var_name] = env_var_value
-                utils.prln(f"✅ API key '{env_var_name}' added")
-
-                add_another = input("Add another API key? (y/N): ")
-                if not utils.cli_string_to_bool(add_another):
-                    break
-
         add_api = input("\nAdd API integration? (y/N): ")
         if utils.cli_string_to_bool(add_api):
-            prompt_api_keys()
+            api_integrations = utils.prompt_api_keys(api_integrations)
 
         env["domain"] = domain
         env["api_base_url"] = api_base_url
@@ -214,7 +202,6 @@ class ConfigFactory:
                 new_setting=font.lower(),
             )
 
-
     def write_colours(self, colours: types.Colours) -> None:
         utils.write_config(
             file_path=path.TW_CONFIG_PATH,
@@ -230,10 +217,10 @@ class ConfigFactory:
             f.seek(0)
             lines = ['ENV="DEV"']
             lines.append(
-                f'DOMAIN={env.get("domain", utils.encase("https://example.com"))}'
+                f'DOMAIN={env.get("domain", utils.encase(constants.DEFAULT_DOMAIN))}'
             )
             lines.append(
-                f'API_BASE_URL={env.get("api_base_url", utils.encase("https://api.example.com"))}'
+                f'API_BASE_URL={env.get("api_base_url", utils.encase(constants.DEFAULT_API_BASE_URL))}'
             )
             for key, value in env.get("api_integrations", {}).items():
                 lines.append(f"{key}={utils.encase(value)}")
@@ -253,7 +240,6 @@ class ConfigFactory:
         with open(file_path, "w") as f:
             f.write(updated)
 
-
     def update_tailwind_config_font(self, file_path: Path, font_name: str) -> None:
         with open(file_path, "r") as f:
             content = f.read()
@@ -265,8 +251,9 @@ class ConfigFactory:
         with open(file_path, "w") as f:
             f.write(updated)
 
-
-    def update_tailwind_config_colors(self, file_path: Path, js_color_block: str) -> None:
+    def update_tailwind_config_colors(
+        self, file_path: Path, js_color_block: str
+    ) -> None:
         with open(file_path, "r") as f:
             content = f.read()
 
@@ -275,7 +262,6 @@ class ConfigFactory:
 
         with open(file_path, "w") as f:
             f.write(updated)
-
 
     # Example usage
     # update_index_css_font(Path("src/index.css"), "Roboto")

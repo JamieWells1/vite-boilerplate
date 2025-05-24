@@ -2,7 +2,7 @@ from pathlib import Path
 import colorsys
 import json
 
-from forge import path
+from forge import path, types
 
 
 def write_config(file_path: Path, example: str, new_setting: str):
@@ -68,3 +68,16 @@ def encase(string: str) -> str:
 def read_configs() -> str:
     with open(path.FORGE_CONFIG_PATH, "r") as f:
         return json.loads(f.read())
+
+
+def prompt_api_keys(api_integrations) -> types.ApiIntegrations:
+    while True:
+        env_var_name = input("\nEnvironment variable name: ")
+        env_var_value = encase(input(f"Value for '{env_var_name}': "))
+
+        api_integrations[env_var_name] = env_var_value
+        prln(f"✅ API key '{env_var_name}' added")
+
+        add_another = input("Add another API key? (y/N): ")
+        if not cli_string_to_bool(add_another):
+            return api_integrations
