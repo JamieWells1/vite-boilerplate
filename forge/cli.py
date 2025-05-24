@@ -204,12 +204,12 @@ class ConfigFactory:
             utils.write_config(
                 file_path=path.TW_CONFIG_PATH,
                 example="<font>",
-                new_setting=font.capitalize(),
+                new_setting=" ".join([word.capitalize() for word in font.split()]),
             )
             utils.write_config(
                 file_path=path.INDEX_CSS_PATH,
                 example="<font>",
-                new_setting=font.replace(" ", "+").capitalize(),
+                new_setting="+".join([word.capitalize() for word in font.split()]),
             )
         else:
             utils.write_config(
@@ -220,7 +220,7 @@ class ConfigFactory:
             utils.write_config(
                 file_path=path.INDEX_CSS_PATH,
                 example="<font>",
-                new_setting=font.lower(),
+                new_setting=font.replace(" ", "-").lower(),
             )
 
     def write_colours(self, colours: types.Colours) -> None:
