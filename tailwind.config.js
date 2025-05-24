@@ -1,26 +1,23 @@
-// tailwind.config.js
 const defaultTheme = require("tailwindcss/defaultTheme");
 
 module.exports = {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/components/**/*.{js,ts,jsx,tsx}",
+    "./src/layouts/**/*.{js,ts,jsx,tsx}",
+    "./src/pages/**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: "class", // Enable dark mode (class-based or media-based)
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", ...defaultTheme.fontFamily.sans],
+        sans: ["Roboto", ...defaultTheme.fontFamily.sans],
       },
-      colors: {
-        primary: {
-          DEFAULT: "#4f46e5", // Indigo 600
-          dark: "#4338ca",
-          light: "#6366f1",
-        },
-        secondary: {
-          DEFAULT: "#ec4899", // Pink 500
-          dark: "#db2777",
-          light: "#f472b6",
-        },
-        muted: "#6b7280", // gray-500
-      },
+      colors: "<colors>",
     },
   },
+  plugins: [
+    require("tailwindcss-animate"), // Add ShadCN animations
+  ],
 };

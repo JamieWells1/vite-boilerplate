@@ -23,5 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Python
+.pytest_cache
+__pycache__
+__pycache__.py
+forge.egg-info
+
 # Environment
 .env
