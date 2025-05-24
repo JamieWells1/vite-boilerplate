@@ -28,6 +28,7 @@ def customise(config_manager):
     utils.prln("🔧 Customise your Vite project")
     configs: Dict = config_manager.get()
     config_manager.set(configs)
+    utils.prln("✔ Custom configurations set!")
 
 
 def list_configs():
@@ -59,13 +60,18 @@ def build():
         except json.JSONDecodeError:
             return
 
-        config_manager.update_index_css_font(path.INDEX_CSS_PATH, configs["fonts"]["font"])
-        config_manager.update_tailwind_config_font(path.TW_CONFIG_PATH, configs["fonts"]["font"])
+        config_manager.update_index_css_font(
+            path.INDEX_CSS_PATH, configs["fonts"]["font"]
+        )
+        config_manager.update_tailwind_config_font(
+            path.TW_CONFIG_PATH, configs["fonts"]["font"]
+        )
         config_manager.update_tailwind_config_colors(
             path.TW_CONFIG_PATH,
             configs["colours"],
         )
         config_manager.write_env(configs["env"])
+        utils.prln("✔ Forge configs built")
 
 
 def main():
@@ -82,8 +88,7 @@ def main():
     elif command == "build":
         build()
     else:
-        print(f"Unknown command: {command}\n")
-        help()
+        print(f"{command}: command not found")
 
 
 class ConfigFactory:
@@ -107,6 +112,9 @@ class ConfigFactory:
         self.write_colours(config["colours"])
         self.write_env(config["env"])
 
+        if not path.FORGE_CONFIG_PATH.exists():
+            path.FORGE_CONFIG_PATH.touch()
+
         with open(path.FORGE_CONFIG_PATH, "r+") as f:
             fonts: types.Font = {
                 "font": config["font"],
@@ -115,7 +123,9 @@ class ConfigFactory:
             colours: types.Colours = config["colours"]
             env: types.Env = config["env"]
 
-            new_configs = json.dumps({"fonts": fonts, "colours": colours, "env": env})
+            new_configs = json.dumps(
+                {"fonts": fonts, "colours": colours, "env": env}, indent=2
+            )
             f.seek(0)
             f.write(new_configs)
 
@@ -123,8 +133,8 @@ class ConfigFactory:
 
     def configure_font(self, font_choice: str = "") -> tuple[bool, str]:
         if not font_choice:
-            font_choice = input("\n🖊️  Use Google fonts? (y/N): ")
-        font = input("\n-> Font name: ")
+            font_choice = input("Use Google fonts? (y/N): ")
+        font = input("-> Font name: ")
 
         if utils.cli_string_to_bool(font_choice):
             use_google_fonts: bool = True
@@ -139,8 +149,8 @@ class ConfigFactory:
 
     def configure_colours(self) -> types.Colours:
         colours: types.Colours = {}
-        primary = "#" + input("\nPrimary colour (hex): #")
-        secondary = "#" + input("\nSecondary colour (hex): #")
+        primary = "#" + input("Primary colour (hex): #")
+        secondary = "#" + input("Secondary colour (hex): #")
 
         if not re.fullmatch(HEX_REGEX, primary) or not re.fullmatch(
             HEX_REGEX, secondary
@@ -162,19 +172,20 @@ class ConfigFactory:
         api_integrations: types.ApiIntegrations = {}
 
         # Get/set domain
-        domain: str = utils.encase(
-            "https://" + input("\nDomain: https://").replace("www.", "")
-        )
+        domain: str = "https://" + input("Domain: https://").replace("www.", "")
         if not domain:
             domain = constants.DEFAULT_DOMAIN
 
         use_subdomain_api_base = input(
-            f"\nUse https://api.{domain[8:]} as API base URL? (Y/n): "
+            f"Use https://api.{domain[9:]} as API base URL? (Y/n): "
         )
-        if use_subdomain_api_base:
-            api_base_url = utils.encase(f"https://api.{domain[8:]}")
+        if (
+            utils.cli_string_to_bool(use_subdomain_api_base)
+            or len(use_subdomain_api_base) == 0
+        ):
+            api_base_url = f"https://api.{domain[9:]}"
         else:
-            api_base_url = utils.encase(f"{domain}/api")
+            api_base_url = f"{domain}/api"
 
         add_api = input("\nAdd API integration? (y/N): ")
         if utils.cli_string_to_bool(add_api):
@@ -226,14 +237,12 @@ class ConfigFactory:
         with open(path.ENV_PATH, "w") as f:
             f.seek(0)
             lines = ['ENV="DEV"']
+            lines.append(f'DOMAIN={env.get("domain", (constants.DEFAULT_DOMAIN))}')
             lines.append(
-                f'DOMAIN={env.get("domain", utils.encase(constants.DEFAULT_DOMAIN))}'
-            )
-            lines.append(
-                f'API_BASE_URL={env.get("api_base_url", utils.encase(constants.DEFAULT_API_BASE_URL))}'
+                f'API_BASE_URL={env.get("api_base_url", (constants.DEFAULT_API_BASE_URL))}'
             )
             for key, value in env.get("api_integrations", {}).items():
-                lines.append(f"{key}={utils.encase(value)}")
+                lines.append(f"{key}={(value)}")
 
             f.write("\n".join(lines))
 
@@ -265,6 +274,9 @@ class ConfigFactory:
         self, file_path: Path, colours: types.Colours
     ) -> None:
         js_colour_block: str = utils.to_tailwind_js(colours)
+        if js_colour_block.startswith('"') and js_colour_block.endswith('"'):
+            js_colour_block = js_colour_block[1:-1]
+
         with open(file_path, "r+") as f:
             content = f.read()
             pattern = r"(?<=//forge-insert:colours\n\s*colors: )<colors>"

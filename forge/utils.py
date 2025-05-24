@@ -66,8 +66,12 @@ def encase(string: str) -> str:
 
 
 def read_configs() -> str:
-    with open(path.FORGE_CONFIG_PATH, "r") as f:
-        return json.loads(f.read())
+    if not path.FORGE_CONFIG_PATH.exists():
+        prln("You have not configured Forge yet. Run 'forge customise' to do so.\n")
+        return ""
+    else:
+        with open(path.FORGE_CONFIG_PATH, "r") as f:
+            return json.loads(f.read())
 
 
 def prompt_api_keys(api_integrations) -> types.ApiIntegrations:
