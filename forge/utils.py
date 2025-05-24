@@ -26,6 +26,15 @@ def hsl_to_hex(h, l, s):
     return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255))
 
 
+def generate_shades(hex_color, delta=0.15):
+    h, l, s = hex_to_hsl(hex_color)
+    return {
+        "DEFAULT": hex_color,
+        "light": hsl_to_hex(h, min(l + delta, 1), s),
+        "dark": hsl_to_hex(h, max(l - delta, 0), s),
+    }
+
+
 def to_tailwind_js(py_obj, indent=2):
     def serialize(d, level=0):
         pad = " " * (level * indent)
@@ -41,3 +50,9 @@ def to_tailwind_js(py_obj, indent=2):
         return "\n".join(lines)
 
     return serialize(py_obj)
+
+
+def cli_string_to_bool(string: str) -> bool:
+    if string == "y" or string == "Y":
+        return True
+    return False
