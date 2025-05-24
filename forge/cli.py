@@ -28,7 +28,7 @@ def customise(config_manager):
     utils.prln("🔧 Customise your Vite project")
     configs: Dict = config_manager.get()
     config_manager.set(configs)
-    utils.prln("✔ Custom configurations set!")
+    utils.prln("✅ Custom configurations set!\n")
 
 
 def list_configs():
@@ -172,18 +172,18 @@ class ConfigFactory:
         api_integrations: types.ApiIntegrations = {}
 
         # Get/set domain
-        domain: str = "https://" + input("Domain: https://").replace("www.", "")
+        domain: str = f"https://{input("Domain: https://").replace("www.", "")}"
         if not domain:
             domain = constants.DEFAULT_DOMAIN
 
         use_subdomain_api_base = input(
-            f"Use https://api.{domain[9:]} as API base URL? (Y/n): "
+            f"Use https://api.{domain[8:]} as API base URL? (Y/n): "
         )
         if (
             utils.cli_string_to_bool(use_subdomain_api_base)
             or len(use_subdomain_api_base) == 0
         ):
-            api_base_url = f"https://api.{domain[9:]}"
+            api_base_url = f"https://api.{domain[8:]}"
         else:
             api_base_url = f"{domain}/api"
 
@@ -224,25 +224,29 @@ class ConfigFactory:
             )
 
     def write_colours(self, colours: types.Colours) -> None:
-        utils.write_config(
-            file_path=path.TW_CONFIG_PATH,
-            example="<colors>",
-            new_setting=utils.to_tailwind_js(colours),
-        )
+        js_colours: str = utils.to_tailwind_js(colours)
+        with open(path.TW_CONFIG_PATH, "r+") as f:
+            file = f.read().replace('"<colors>"', js_colours)
+            f.seek(0)
+            f.write(file)
+            f.truncate()
 
     def write_env(self, env: types.Env) -> None:
         if not path.ENV_PATH.exists():
             path.ENV_PATH.touch()
 
+        domain = utils.encase(env.get("domain", (constants.DEFAULT_DOMAIN)))
+        api_base_url = utils.encase(
+            env.get("api_base_url", (constants.DEFAULT_API_BASE_URL))
+        )
+
         with open(path.ENV_PATH, "w") as f:
             f.seek(0)
             lines = ['ENV="DEV"']
-            lines.append(f'DOMAIN={env.get("domain", (constants.DEFAULT_DOMAIN))}')
-            lines.append(
-                f'API_BASE_URL={env.get("api_base_url", (constants.DEFAULT_API_BASE_URL))}'
-            )
+            lines.append(f"DOMAIN={domain}")
+            lines.append(f"API_BASE_URL={api_base_url}")
             for key, value in env.get("api_integrations", {}).items():
-                lines.append(f"{key}={(value)}")
+                lines.append(f"{key}={utils.encase(value)}")
 
             f.write("\n".join(lines))
 
