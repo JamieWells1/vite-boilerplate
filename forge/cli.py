@@ -25,7 +25,7 @@ Available commands:
 
 
 def start(config_manager):
-    utils.prln("🔧 Start customisation of your Vite project")
+    utils.prln("🔧 Start customisation of your Vite project\n")
     configs: Dict = config_manager.get()
     config_manager.set(configs)
     utils.prln("\033[1;32m✔ Custom configurations set!\033[0m")
