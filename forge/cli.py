@@ -71,7 +71,7 @@ def build():
         )
         config_manager.write_env(configs["env"])
         utils.prln(
-            "✔ \033[1;32mForge configs built. Run 'npm run dev' to view your new configuration.\n\033[0m"
+            "\033[1;32m✔ Forge configs built. Run 'npm run dev' to view your new configuration.\n\033[0m"
         )
 
 
