@@ -123,6 +123,7 @@ class ConfigFactory:
             }
             colours: types.Colours = config["colours"]
             env: types.Env = config["env"]
+            env.pop("api_integrations", None)  # remove sensitive data
 
             new_configs = json.dumps(
                 {"fonts": fonts, "colours": colours, "env": env}, indent=2
