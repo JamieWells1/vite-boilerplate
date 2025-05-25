@@ -28,7 +28,8 @@ def start(config_manager):
     utils.prln("🔧 Start customisation of your Vite project")
     configs: Dict = config_manager.get()
     config_manager.set(configs)
-    utils.prln("✅ Custom configurations set!\n")
+    utils.prln("\033[1;32m✔ Custom configurations set!\033[0m")
+    print("Run 'forge list' to view your configs.\n")
 
 
 def list_configs():
@@ -241,18 +242,29 @@ class ConfigFactory:
         if not path.ENV_PATH.exists():
             path.ENV_PATH.touch()
 
+        if not path.ENV_EXAMPLE_PATH.exists():
+            path.ENV_EXAMPLE_PATH.touch()
+
         domain = utils.encase(env.get("domain", (constants.DEFAULT_DOMAIN)))
         api_base_url = utils.encase(
             env.get("api_base_url", (constants.DEFAULT_API_BASE_URL))
         )
 
         with open(path.ENV_PATH, "w") as f:
-            f.seek(0)
             lines = ['ENV="DEV"']
             lines.append(f"DOMAIN={domain}")
             lines.append(f"API_BASE_URL={api_base_url}")
             for key, value in env.get("api_integrations", {}).items():
                 lines.append(f"{key}={utils.encase(value)}")
+
+            f.write("\n".join(lines))
+
+        with open(path.ENV_EXAMPLE_PATH, "w") as f:
+            lines = ['ENV="DEV"']
+            lines.append(f"DOMAIN={constants.DEFAULT_DOMAIN}")
+            lines.append(f"API_BASE_URL={constants.DEFAULT_API_BASE_URL}")
+            for key, value in env.get("api_integrations", {}).items():
+                lines.append(f"{key}={utils.encase("your-api-key-here")}")
 
             f.write("\n".join(lines))
 
@@ -289,7 +301,9 @@ class ConfigFactory:
 
         with open(file_path, "r+") as f:
             content = f.read()
-            pattern = r"(//forge-insert:colors\s*\n\s*)colors:\s*\{(?:[^{}]|\{[^{}]*\})*\},?"
+            pattern = (
+                r"(//forge-insert:colors\s*\n\s*)colors:\s*\{(?:[^{}]|\{[^{}]*\})*\},?"
+            )
             updated = re.sub(pattern, r"\1colors: " + js_colour_block + ",", content)
             f.seek(0)
             f.write(updated)

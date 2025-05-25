@@ -20,8 +20,8 @@ Welcome to the **Vite + React + TailwindCSS + ShadCN Starter Template**! This pr
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/vite-react-tailwind-shadcn-starter.git
-cd vite-react-tailwind-shadcn-starter
+git clone https://github.com/JamieWells1/vite-template-with-cli.git
+cd vite-template-with-cli
 ```
 
 ### 2. Install Dependencies

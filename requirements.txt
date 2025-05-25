@@ -1,1 +1,9 @@
--e git+https://github.com/JamieWells1/vite-boilerplate.git@f69ef18587524a701e15f9766445444b1e8fb4c1#egg=forge
+coverage==7.8.2
+-e git+https://github.com/JamieWells1/vite-boilerplate.git@fa38a44cd9612eddea270104b04937b7a6ec9874#egg=forge
+iniconfig==2.1.0
+packaging==25.0
+pluggy==1.6.0
+pytest==8.3.5
+pytest-cov==6.1.1
+pytest-cover==3.0.0
+pytest-coverage==0.0
